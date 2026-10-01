@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SQL Genie AI — Enterprise Autonomous DBA Platform</title>
+<style>
+  :root {
+    --primary: #0a3d91;
+    --primary-dark: #072d6b;
+    --accent: #0078d4;
+    --accent2: #00b4d8;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #94a3b8;
+    --sidebar-active: #1e40af;
+    --card-bg: #ffffff;
+    --body-bg: #f0f4f9;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 14px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--body-bg); color:var(--text-primary); height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #1565c0 100%);
+    color:#fff; padding:0 24px; height:62px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 12px rgba(0,0,0,0.25); z-index:100; flex-shrink:0;
+  }
+  .logo { display:flex; align-items:center; gap:12px; }
+  .logo-icon {
+    width:36px; height:36px; background:linear-gradient(135deg,#00b4d8,#0078d4);
+    border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:900; box-shadow:0 2px 8px rgba(0,120,212,0.5);
+  }
+  .logo-text { font-size:18px; font-weight:700; letter-spacing:0.3px; }
+  .logo-badge { font-size:10px; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:20px; margin-left:6px; letter-spacing:1px; }
+  .header-search {
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2);
+    border-radius:10px; padding:8px 16px; width:420px; cursor:text;
+    transition:background 0.2s;
+  }
+  .header-search:hover { background:rgba(255,255,255,0.18); }
+  .header-search span { color:rgba(255,255,255,0.6); font-size:14px; }
+  .header-search .ai-badge { background:linear-gradient(90deg,#7c3aed,#0078d4); color:#fff; font-size:10px; padding:2px 7px; border-radius:20px; margin-left:auto; }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .notif-btn { position:relative; cursor:pointer; }
+  .notif-btn svg { width:22px; height:22px; fill:rgba(255,255,255,0.8); }
+  .notif-dot { position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:#ef4444; border-radius:50%; border:1.5px solid var(--primary); }
+  .user-avatar {
+    width:36px; height:36px; background:linear-gradient(135deg,#7c3aed,#0078d4);
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .live-badge { display:flex; align-items:center; gap:5px; font-size:12px; }
+  .live-dot { width:7px; height:7px; background:#10b981; border-radius:50%; animation:pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── LAYOUT ── */
+  .layout { display:flex; flex:1; overflow:hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width:230px; background:var(--sidebar-bg); padding:16px 0; flex-shrink:0;
+    display:flex; flex-direction:column; overflow-y:auto;
+  }
+  .sidebar::-webkit-scrollbar { width:4px; }
+  .sidebar::-webkit-scrollbar-thumb { background:#334155; border-radius:4px; }
+  .sidebar-section { padding:14px 20px 6px; font-size:10px; font-weight:700; color:#475569; letter-spacing:1.5px; text-transform:uppercase; }
+  .nav-item {
+    display:flex; align-items:center; gap:12px; padding:11px 20px;
+    color:var(--sidebar-text); cursor:pointer; border-left:3px solid transparent;
+    transition:all 0.18s; font-size:13.5px; position:relative;
+  }
+  .nav-item:hover { background:rgba(255,255,255,0.05); color:#e2e8f0; }
+  .nav-item.active { background:rgba(30,64,175,0.25); color:#93c5fd; border-left-color:#3b82f6; }
+  .nav-icon { font-size:16px; width:20px; text-align:center; }
+  .nav-badge { margin-left:auto; background:#ef4444; color:#fff; font-size:10px; padding:1px 6px; border-radius:10px; font-weight:600; }
+  .nav-badge.warn { background:#f59e0b; }
+  .nav-badge.ok { background:#10b981; }
+  .sidebar-footer { margin-top:auto; padding:16px 20px; border-top:1px solid #1e293b; }
+  .sidebar-footer-text { font-size:11px; color:#475569; }
+
+  /* ── MAIN ── */
+  .main { flex:1; overflow-y:auto; padding:24px; }
+  .main::-webkit-scrollbar { width:6px; }
+  .main::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+
+  /* ── TAB PAGES ── */
+  .tab-page { display:none; }
+  .tab-page.active { display:block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+  .page-title { font-size:22px; font-weight:700; color:var(--text-primary); }
+  .page-subtitle { font-size:13px; color:var(--text-secondary); margin-top:3px; }
+  .page-actions { display:flex; gap:10px; }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.18s; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#005fa3; }
+  .btn-outline { background:#fff; color:var(--accent); border:1.5px solid var(--accent); }
+  .btn-outline:hover { background:#eff6ff; }
+  .btn-ghost { background:transparent; color:var(--text-secondary); border:1.5px solid var(--border); }
+  .btn-ghost:hover { background:#fff; }
+  .btn-success { background:var(--success); color:#fff; }
+  .btn-danger { background:var(--danger); color:#fff; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:22px; }
+  .kpi-card {
+    background:var(--card-bg); border-radius:var(--radius); padding:20px;
+    box-shadow:var(--shadow); position:relative; overflow:hidden;
+  }
+  .kpi-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; }
+  .kpi-card.blue::before { background:var(--accent); }
+  .kpi-card.green::before { background:var(--success); }
+  .kpi-card.orange::before { background:var(--warning); }
+  .kpi-card.red::before { background:var(--danger); }
+  .kpi-card.purple::before { background:#7c3aed; }
+  .kpi-label { font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .kpi-value { font-size:32px; font-weight:800; margin:6px 0 4px; }
+  .kpi-card.blue .kpi-value { color:var(--accent); }
+  .kpi-card.green .kpi-value { color:var(--success); }
+  .kpi-card.orange .kpi-value { color:var(--warning); }
+  .kpi-card.red .kpi-value { color:var(--danger); }
+  .kpi-card.purple .kpi-value { color:#7c3aed; }
+  .kpi-trend { font-size:12px; display:flex; align-items:center; gap:4px; }
+  .kpi-trend.up { color:var(--success); }
+  .kpi-trend.down { color:var(--danger); }
+  .kpi-icon { position:absolute; right:16px; top:16px; font-size:28px; opacity:0.12; }
+
+  /* ── GRID LAYOUTS ── */
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+  .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:20px; }
+  .grid-2-1 { display:grid; grid-template-columns:2fr 1fr; gap:20px; margin-bottom:20px; }
+  .grid-1-2 { display:grid; grid-template-columns:1fr 2fr; gap:20px; margin-bottom:20px; }
+
+  /* ── CARD ── */
+  .card { background:var(--card-bg); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
+  .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .card-title { font-size:14px; font-weight:700; color:var(--text-primary); }
+  .card-action { font-size:12px; color:var(--accent); cursor:pointer; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#f8fafc; color:var(--text-secondary); font-weight:700; padding:10px 14px; text-align:left; border-bottom:2px solid var(--border); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+  td { padding:11px 14px; border-bottom:1px solid var(--border); color:var(--text-primary); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#f8fafc; }
+
+  /* ── STATUS BADGES ── */
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+  .badge::before { content:''; width:6px; height:6px; border-radius:50%; }
+  .badge-green { background:#d1fae5; color:#065f46; }
+  .badge-green::before { background:#10b981; }
+  .badge-red { background:#fee2e2; color:#991b1b; }
+  .badge-red::before { background:#ef4444; }
+  .badge-orange { background:#fef3c7; color:#92400e; }
+  .badge-orange::before { background:#f59e0b; }
+  .badge-blue { background:#dbeafe; color:#1e40af; }
+  .badge-blue::before { background:#3b82f6; }
+  .badge-purple { background:#ede9fe; color:#5b21b6; }
+  .badge-purple::before { background:#7c3aed; }
+  .badge-gray { background:#f1f5f9; color:#475569; }
+  .badge-gray::before { background:#94a3b8; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { background:#e2e8f0; border-radius:10px; height:8px; overflow:hidden; }
+  .progress-bar { height:100%; border-radius:10px; transition:width 0.6s; }
+  .progress-blue { background:linear-gradient(90deg, #3b82f6, #0078d4); }
+  .progress-green { background:linear-gradient(90deg, #34d399, #10b981); }
+  .progress-orange { background:linear-gradient(90deg, #fbbf24, #f59e0b); }
+  .progress-red { background:linear-gradient(90deg, #f87171, #ef4444); }
+
+  /* ── AI COPILOT ── */
+  .copilot-layout { display:grid; grid-template-columns:1fr 320px; gap:20px; height:calc(100vh - 200px); }
+  .chat-panel { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden; }
+  .chat-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+  .chat-avatar { width:38px; height:38px; background:linear-gradient(135deg,#7c3aed,#0078d4); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .chat-info .name { font-weight:700; font-size:14px; }
+  .chat-info .status { font-size:12px; color:var(--success); }
+  .chat-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; }
+  .chat-messages::-webkit-scrollbar { width:4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:#e2e8f0; }
+  .msg-user { align-self:flex-end; max-width:75%; }
+  .msg-ai { align-self:flex-start; max-width:85%; }
+  .msg-bubble { padding:12px 16px; border-radius:16px; font-size:13.5px; line-height:1.55; }
+  .msg-user .msg-bubble { background:linear-gradient(135deg,#3b82f6,#0078d4); color:#fff; border-bottom-right-radius:4px; }
+  .msg-ai .msg-bubble { background:#f0f9ff; color:var(--text-primary); border-bottom-left-radius:4px; border:1px solid #bae6fd; }
+  .msg-meta { font-size:11px; color:var(--text-secondary); margin-top:4px; }
+  .msg-user .msg-meta { text-align:right; }
+  .ai-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .ai-action-btn { padding:6px 12px; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; border-radius:20px; font-size:12px; cursor:pointer; font-weight:600; }
+  .ai-action-btn:hover { background:#dbeafe; }
+  .sql-block { background:#1e293b; color:#7dd3fc; padding:12px 14px; border-radius:8px; font-family:'Courier New',monospace; font-size:12px; margin-top:8px; line-height:1.6; }
+  .sql-key { color:#f472b6; }
+  .sql-val { color:#86efac; }
+  .chat-input-area { padding:16px; border-top:1px solid var(--border); display:flex; gap:10px; align-items:center; }
+  .chat-input { flex:1; border:1.5px solid var(--border); border-radius:10px; padding:10px 14px; font-size:14px; outline:none; font-family:inherit; }
+  .chat-input:focus { border-color:var(--accent); }
+  .send-btn { width:40px; height:40px; background:var(--accent); border:none; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; flex-shrink:0; }
+  .quick-prompts { padding:8px 20px 0; display:flex; flex-wrap:wrap; gap:6px; }
+  .quick-chip { padding:5px 12px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:20px; font-size:11.5px; cursor:pointer; color:var(--text-secondary); }
+  .quick-chip:hover { background:#eff6ff; color:var(--accent); border-color:#bfdbfe; }
+  .side-panel { display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
+
+  /* ── HEALTH BAR ── */
+  .health-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+  .health-item:last-child { border-bottom:none; }
+  .health-name { font-size:13px; flex:1; }
+  .health-score { font-size:13px; font-weight:700; width:36px; text-align:right; }
+  .health-score.good { color:var(--success); }
+  .health-score.warn { color:var(--warning); }
+  .health-score.bad { color:var(--danger); }
+
+  /* ── MINI CHART (SVG) ── */
+  .sparkline { display:block; }
+
+  /* ── DONUT CHART ── */
+  .donut-wrap { display:flex; justify-content:center; align-items:center; gap:20px; padding:10px 0; }
+  .donut-legend { display:flex; flex-direction:column; gap:8px; }
+  .legend-item { display:flex; align-items:center; gap:8px; font-size:12px; }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  /* ── ALERT ITEMS ── */
+  .alert-item { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px; margin-bottom:8px; }
+  .alert-item.crit { background:#fff1f2; border-left:3px solid #ef4444; }
+  .alert-item.warn { background:#fffbeb; border-left:3px solid #f59e0b; }
+  .alert-item.info { background:#eff6ff; border-left:3px solid #3b82f6; }
+  .alert-icon { font-size:18px; }
+  .alert-text { flex:1; font-size:13px; }
+  .alert-text strong { display:block; font-weight:700; }
+  .alert-text span { color:var(--text-secondary); font-size:12px; }
+  .alert-time { font-size:11px; color:var(--text-secondary); white-space:nowrap; }
+
+  /* ── TIMELINE ── */
+  .timeline-item { display:flex; gap:14px; padding-bottom:16px; position:relative; }
+  .timeline-item::before { content:''; position:absolute; left:14px; top:28px; bottom:0; width:2px; background:var(--border); }
+  .timeline-item:last-child::before { display:none; }
+  .timeline-dot { width:28px; height:28px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .timeline-dot.green { background:#d1fae5; color:#065f46; }
+  .timeline-dot.blue { background:#dbeafe; color:#1e40af; }
+  .timeline-dot.orange { background:#fef3c7; color:#92400e; }
+  .timeline-dot.red { background:#fee2e2; color:#991b1b; }
+  .timeline-body { flex:1; }
+  .timeline-title { font-size:13px; font-weight:600; }
+  .timeline-meta { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+
+  /* ── EXEC REPORT ── */
+  .exec-kpi { text-align:center; padding:20px; }
+  .exec-kpi .big-num { font-size:42px; font-weight:900; }
+  .exec-kpi .label { font-size:12px; color:var(--text-secondary); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+
+  /* ── BAR CHART MOCK ── */
+  .bar-chart { display:flex; align-items:flex-end; gap:6px; height:100px; padding:8px 0; }
+  .bar { flex:1; border-radius:4px 4px 0 0; position:relative; display:flex; justify-content:center; }
+  .bar-label { position:absolute; bottom:-18px; font-size:10px; color:var(--text-secondary); white-space:nowrap; }
+  .bar-val { position:absolute; top:-18px; font-size:10px; font-weight:700; }
+
+  /* ── SCROLLBAR ── */
+  .main::-webkit-scrollbar { width:6px; }
+  .main::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width:1200px) { .kpi-grid { grid-template-columns:repeat(3,1fr); } }
+
+  /* ── TOOLTIP ── */
+  .tooltip-wrap { position:relative; display:inline-block; }
+  .tooltip-wrap:hover .tooltip { opacity:1; pointer-events:auto; transform:translateY(0); }
+  .tooltip { position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%) translateY(4px); background:#1e293b; color:#fff; padding:5px 10px; border-radius:6px; font-size:11px; white-space:nowrap; opacity:0; pointer-events:none; transition:all 0.18s; z-index:999; }
+
+  /* ── SWITCH ── */
+  .switch { position:relative; display:inline-block; width:36px; height:20px; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#cbd5e1; transition:.3s; border-radius:20px; }
+  .slider:before { position:absolute; content:''; height:14px; width:14px; left:3px; bottom:3px; background:#fff; transition:.3s; border-radius:50%; }
+  input:checked + .slider { background:var(--accent); }
+  input:checked + .slider:before { transform:translateX(16px); }
+
+  /* ── LOADING SKELETON ── */
+  .skeleton { background:linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:4px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ── SCORE CIRCLE ── */
+  .score-circle { display:inline-flex; align-items:center; justify-content:center; width:50px; height:50px; border-radius:50%; font-size:14px; font-weight:800; }
+  .score-high { background:#d1fae5; color:#065f46; }
+  .score-mid { background:#fef3c7; color:#92400e; }
+  .score-low { background:#fee2e2; color:#991b1b; }
+
+  /* ── TAGS ── */
+  .tag { display:inline-block; padding:2px 8px; background:#f1f5f9; color:#475569; border-radius:4px; font-size:11px; margin:2px; }
+
+  /* ── FLOATING AI HINT ── */
+  .ai-thinking { display:flex; align-items:center; gap:8px; padding:10px 14px; background:#f0f9ff; border-radius:10px; font-size:13px; color:#0369a1; }
+  .dot-pulse { display:flex; gap:4px; }
+  .dot-pulse span { width:7px; height:7px; background:#0078d4; border-radius:50%; animation:dotPulse 1.2s infinite; }
+  .dot-pulse span:nth-child(2) { animation-delay:0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay:0.4s; }
+  @keyframes dotPulse { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════ HEADER ════════════════════════════════ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🧞</div>
+    <div>
+      <span class="logo-text">SQL Genie AI</span>
+      <span class="logo-badge">ENTERPRISE</span>
+    </div>
+  </div>
+
+  <div class="header-search" onclick="document.getElementById('aiQuery').focus()">
+    <span>🔍</span>
+    <span>Ask AI anything... (e.g. "Show top 10 slow queries in PROD")</span>
+    <span class="ai-badge">✦ AI</span>
+  </div>
+
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div><span style="color:rgba(255,255,255,0.8);font-size:12px;">Live</span></div>
+    <div class="notif-btn tooltip-wrap">
+      <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      <div class="notif-dot"></div>
+      <div class="tooltip">12 Active Alerts</div>
+    </div>
+    <div class="user-avatar">JD</div>
+  </div>
+</header>
+
+<!-- ════════════════════════════════ LAYOUT ════════════════════════════════ -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sidebar-section">Core</div>
+
+    <div class="nav-item active" onclick="showTab('dashboard',this)">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showTab('copilot',this)">
+      <span class="nav-icon">🤖</span> AI Copilot
+      <span class="nav-badge ok">AI</span>
+    </div>
+    <div class="nav-item" onclick="showTab('health',this)">
+      <span class="nav-icon">❤️</span> Health Center
+      <span class="nav-badge warn">3</span>
+    </div>
+
+    <div class="sidebar-section">Operations</div>
+
+    <div class="nav-item" onclick="showTab('backup',this)">
+      <span class="nav-icon">💾</span> Backup Compliance
+      <span class="nav-badge">5</span>
+    </div>
+    <div class="nav-item" onclick="showTab('migration',this)">
+      <span class="nav-icon">🚀</span> Migration Factory
+    </div>
+    <div class="nav-item" onclick="showTab('security',this)">
+      <span class="nav-icon">🔐</span> Security Hub
+      <span class="nav-badge">12</span>
+    </div>
+
+    <div class="sidebar-section">Insights</div>
+
+    <div class="nav-item" onclick="showTab('performance',this)">
+      <span class="nav-icon">⚡</span> Performance Insights
+    </div>
+    <div class="nav-item" onclick="showTab('automation',this)">
+      <span class="nav-icon">⚙️</span> Automation Hub
+    </div>
+    <div class="nav-item" onclick="showTab('executive',this)">
+      <span class="nav-icon">📈</span> Executive Reports
+      <span class="nav-badge ok">NEW</span>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-text">v4.2.1 — Ensono DBA Platform</div>
+      <div class="sidebar-footer-text" style="margin-top:4px;">© 2025 SQL Genie AI</div>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════ MAIN CONTENT ════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ══════════════════════════════════════
+         TAB 1: DASHBOARD
+    ══════════════════════════════════════ -->
+    <div class="tab-page active" id="tab-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Enterprise Autonomous DBA Platform</div>
+          <div class="page-subtitle">Last refreshed: Today at 13:58 UTC &nbsp;|&nbsp; Environment: Production</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">⬇ Export</button>
+          <button class="btn btn-primary">+ New Task</button>
+        </div>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card blue">
+          <div class="kpi-icon">🖥️</div>
+          <div class="kpi-label">Total Servers</div>
+          <div class="kpi-value">624</div>
+          <div class="kpi-trend up">▲ 18 this month</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-icon">🗄️</div>
+          <div class="kpi-label">Databases</div>
+          <div class="kpi-value">4,912</div>
+          <div class="kpi-trend up">▲ 126 this month</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon">❤️</div>
+          <div class="kpi-label">Overall Health</div>
+          <div class="kpi-value">92%</div>
+          <div class="kpi-trend up">▲ 2.1% vs last week</div>
+        </div>
+        <div class="kpi-card orange">
+          <div class="kpi-icon">💾</div>
+          <div class="kpi-label">Backup Success</div>
+          <div class="kpi-value">98.4%</div>
+          <div class="kpi-trend down">▼ 0.3% this week</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon">🚨</div>
+          <div class="kpi-label">Critical Alerts</div>
+          <div class="kpi-value">12</div>
+          <div class="kpi-trend down">▼ 4 resolved today</div>
+        </div>
+      </div>
+
+      <!-- SECOND ROW KPIs -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr); margin-top:-8px;">
+        <div class="kpi-card green">
+          <div class="kpi-label">Avg Query Time</div>
+          <div class="kpi-value" style="font-size:26px;">142ms</div>
+          <div class="kpi-trend up">▲ Improved 18ms</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">AG Groups</div>
+          <div class="kpi-value" style="font-size:26px;">48</div>
+          <div class="kpi-trend up">▲ All Synchronized</div>
+        </div>
+        <div class="kpi-card orange">
+          <div class="kpi-label">Patch Compliance</div>
+          <div class="kpi-value" style="font-size:26px;">87.3%</div>
+          <div class="kpi-trend down">▼ 43 servers pending</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Storage Used</div>
+          <div class="kpi-value" style="font-size:26px;">68.2%</div>
+          <div class="kpi-trend up">▲ 2.8TB added</div>
+        </div>
+      </div>
+
+      <!-- ALERTS + RECOMMENDATIONS -->
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🚨 Active Alerts</div>
+            <span class="card-action">View All →</span>
+          </div>
+          <div class="alert-item crit">
+            <span class="alert-icon">🔴</span>
+            <div class="alert-text"><strong>PROD-SQL-012 — Backup Failure</strong><span>msdb backup job failed | Storage connectivity timeout</span></div>
+            <span class="alert-time">2 min ago</span>
+          </div>
+          <div class="alert-item crit">
+            <span class="alert-icon">🔴</span>
+            <div class="alert-text"><strong>PROD-SQL-047 — CPU at 94%</strong><span>Blocking detected | 18 active sessions waiting</span></div>
+            <span class="alert-time">7 min ago</span>
+          </div>
+          <div class="alert-item warn">
+            <span class="alert-icon">🟡</span>
+            <div class="alert-text"><strong>UAT-SQL-003 — AG Sync Lag</strong><span>Secondary replica 2.3s behind primary</span></div>
+            <span class="alert-time">15 min ago</span>
+          </div>
+          <div class="alert-item warn">
+            <span class="alert-icon">🟡</span>
+            <div class="alert-text"><strong>PROD-SQL-089 — Disk at 82%</strong><span>E:\ data volume nearing threshold</span></div>
+            <span class="alert-time">34 min ago</span>
+          </div>
+          <div class="alert-item info">
+            <span class="alert-icon">🔵</span>
+            <div class="alert-text"><strong>DR-SQL-011 — Patch Available</strong><span>CU17 for SQL Server 2019 ready to deploy</span></div>
+            <span class="alert-time">1 hr ago</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🧠 AI Recommendations</div>
+            <span class="card-action">Run All</span>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot red">!</div>
+            <div class="timeline-body">
+              <div class="timeline-title">Add 3 Missing Indexes</div>
+              <div class="timeline-meta">Est. 34% query improvement · PROD-DB-OrdersDB</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot orange">⚠</div>
+            <div class="timeline-body">
+              <div class="timeline-title">Memory Pressure Detected</div>
+              <div class="timeline-meta">Max Server Memory may need increase · 4 servers</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot blue">↑</div>
+            <div class="timeline-body">
+              <div class="timeline-title">AG Secondary Readable Offload</div>
+              <div class="timeline-meta">Route 12 reports to readable secondaries</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot green">✓</div>
+            <div class="timeline-body">
+              <div class="timeline-title">Auto-Shrink Disabled</div>
+              <div class="timeline-meta">Completed on 47 databases · no action needed</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot orange">↗</div>
+            <div class="timeline-body">
+              <div class="timeline-title">Apply CU17 Patch</div>
+              <div class="timeline-meta">43 servers eligible · schedule maintenance window</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERVER TABLE -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🖥️ Top Production Servers</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:12px;outline:none;" placeholder="🔍 Filter servers..."/>
+            <span class="card-action">View All 624 →</span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Server</th><th>Environment</th><th>SQL Version</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Health</th><th>Last Backup</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><strong>PROD-SQL-012</strong></td><td><span class="badge badge-red">Production</span></td><td>SQL 2022 CU9</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:60px;"><div class="progress-bar progress-red" style="width:94%"></div></div><span style="font-size:12px;">94%</span></div></td><td>82%</td><td>74%</td><td><span class="score-circle score-low">61</span></td><td><span class="badge badge-red">Failed</span></td><td><span class="badge badge-red">Critical</span></td></tr>
+              <tr><td><strong>PROD-SQL-047</strong></td><td><span class="badge badge-red">Production</span></td><td>SQL 2019 CU16</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:60px;"><div class="progress-bar progress-orange" style="width:78%"></div></div><span style="font-size:12px;">78%</span></div></td><td>91%</td><td>68%</td><td><span class="score-circle score-mid">72</span></td><td><span class="badge badge-green">Success</span></td><td><span class="badge badge-orange">Warning</span></td></tr>
+              <tr><td><strong>PROD-SQL-001</strong></td><td><span class="badge badge-red">Production</span></td><td>SQL 2022 CU9</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:60px;"><div class="progress-bar progress-green" style="width:42%"></div></div><span style="font-size:12px;">42%</span></div></td><td>65%</td><td>52%</td><td><span class="score-circle score-high">96</span></td><td><span class="badge badge-green">Success</span></td><td><span class="badge badge-green">Healthy</span></td></tr>
+              <tr><td><strong>PROD-SQL-022</strong></td><td><span class="badge badge-red">Production</span></td><td>SQL 2022 CU9</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:60px;"><div class="progress-bar progress-green" style="width:55%"></div></div><span style="font-size:12px;">55%</span></div></td><td>72%</td><td>61%</td><td><span class="score-circle score-high">91</span></td><td><span class="badge badge-green">Success</span></td><td><span class="badge badge-green">Healthy</span></td></tr>
+              <tr><td><strong>UAT-SQL-003</strong></td><td><span class="badge badge-blue">UAT</span></td><td>SQL 2019 CU16</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:60px;"><div class="progress-bar progress-orange" style="width:66%"></div></div><span style="font-size:12px;">66%</span></div></td><td>54%</td><td>44%</td><td><span class="score-circle score-mid">78</span></td><td><span class="badge badge-orange">Delayed</span></td><td><span class="badge badge-orange">Warning</span></td></tr>
+              <tr><td><strong>DR-SQL-011</strong></td><td><span class="badge badge-purple">DR</span></td><td>SQL 2022 CU7</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:60px;"><div class="progress-bar progress-green" style="width:28%"></div></div><span style="font-size:12px;">28%</span></div></td><td>41%</td><td>38%</td><td><span class="score-circle score-high">94</span></td><td><span class="badge badge-green">Success</span></td><td><span class="badge badge-green">Healthy</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 2: AI COPILOT
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-copilot">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🤖 AI Copilot</div>
+          <div class="page-subtitle">Natural language interface — Powered by GPT-4o + SQL Genie Engine</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">🕐 History</button>
+          <button class="btn btn-primary">⊕ New Session</button>
+        </div>
+      </div>
+
+      <div class="copilot-layout">
+        <!-- CHAT -->
+        <div class="chat-panel">
+          <div class="chat-header">
+            <div class="chat-avatar">🧞</div>
+            <div class="chat-info">
+              <div class="name">SQL Genie AI Copilot</div>
+              <div class="status">● Online — Ready to assist</div>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px;">
+              <span style="font-size:12px;color:var(--text-secondary);">Session #1042</span>
+            </div>
+          </div>
+
+          <div class="quick-prompts">
+            <div class="quick-chip" onclick="simulateQuery('Show top 10 long-running queries')">🔍 Long-running queries</div>
+            <div class="quick-chip" onclick="simulateQuery('List failed backups today')">💾 Failed backups</div>
+            <div class="quick-chip" onclick="simulateQuery('Show blocking sessions')">🚫 Blocking sessions</div>
+            <div class="quick-chip" onclick="simulateQuery('Index recommendations')">📋 Index recommendations</div>
+            <div class="quick-chip" onclick="simulateQuery('Storage forecast')">💽 Storage forecast</div>
+            <div class="quick-chip" onclick="simulateQuery('Patch compliance report')">🔧 Patch status</div>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            <div class="msg-ai">
+              <div class="msg-bubble">
+                👋 Hello! I'm your <strong>SQL Genie AI Copilot</strong>. I have full access to your 624 servers and 4,912 databases.<br><br>
+                You can ask me anything — from finding slow queries to generating incident reports, creating tickets, or scheduling maintenance tasks.
+              </div>
+              <div class="msg-meta">SQL Genie AI · 13:45 UTC</div>
+            </div>
+
+            <div class="msg-user">
+              <div class="msg-bubble">Show all production servers with failed backups</div>
+              <div class="msg-meta">You · 13:52 UTC</div>
+            </div>
+
+            <div class="msg-ai">
+              <div class="msg-bubble">
+                🔍 Querying backup history across <strong>all 624 production servers</strong>...<br><br>
+                I found <strong>3 servers</strong> with backup failures in the last 24 hours:
+                <div class="sql-block">
+                  <span class="sql-key">SELECT</span> s.ServerName, b.DatabaseName, b.LastBackupDate, b.ErrorMessage<br>
+                  <span class="sql-key">FROM</span> DBAInventory.dbo.BackupStatus b<br>
+                  <span class="sql-key">JOIN</span> Servers s <span class="sql-key">ON</span> s.ID = b.ServerID<br>
+                  <span class="sql-key">WHERE</span> b.Status = <span class="sql-val">'FAILED'</span><br>
+                  <span class="sql-key">AND</span> b.BackupDate >= <span class="sql-val">DATEADD(DAY,-1,GETDATE())</span><br>
+                  <span class="sql-key">AND</span> s.Environment = <span class="sql-val">'PRODUCTION'</span>
+                </div>
+                <br>
+                <strong>Results:</strong><br>
+                🔴 PROD-SQL-012 — OrdersDB — Storage timeout<br>
+                🔴 PROD-SQL-012 — FinanceDB — Storage timeout<br>
+                🟡 PROD-SQL-089 — ReportingDB — Job step failed<br><br>
+                <strong>Root Cause:</strong> PROD-SQL-012 storage connectivity to backup target (\\BKPNAS01) is unreachable.<br>
+                <strong>Recommendation:</strong> Raise Priority 1 incident, involve Network and Storage teams.
+                <div class="ai-actions">
+                  <div class="ai-action-btn">📋 Create Incident</div>
+                  <div class="ai-action-btn">📄 Generate Report</div>
+                  <div class="ai-action-btn">🔁 Retry Backup</div>
+                  <div class="ai-action-btn">📧 Notify Team</div>
+                </div>
+              </div>
+              <div class="msg-meta">SQL Genie AI · 13:52 UTC · 0.8s response time</div>
+            </div>
+
+            <div class="msg-user">
+              <div class="msg-bubble">What is the estimated storage growth for next quarter?</div>
+              <div class="msg-meta">You · 13:55 UTC</div>
+            </div>
+
+            <div class="msg-ai">
+              <div class="msg-bubble">
+                📈 Analysing 90-day storage growth trends across all environments...<br><br>
+                <strong>Storage Forecast — Q1 2026:</strong><br><br>
+                • Current Total Storage Used: <strong>187.4 TB</strong><br>
+                • Monthly Growth Rate: <strong>+4.2 TB / month</strong> (avg, last 90 days)<br>
+                • Projected Q1 End: <strong>~200.1 TB</strong> (+12.7 TB)<br>
+                • At-Risk Servers (>85% within 90 days): <strong>7 servers</strong><br><br>
+                ⚠️ <strong>PROD-SQL-089</strong> will hit 90% capacity in <strong>~18 days</strong> at current growth rate.<br><br>
+                <strong>Recommendation:</strong> Add 5TB to PROD-SQL-089 immediately. Schedule storage review for 6 additional servers.
+                <div class="ai-actions">
+                  <div class="ai-action-btn">📊 Full Storage Report</div>
+                  <div class="ai-action-btn">📋 Create CMDB Ticket</div>
+                  <div class="ai-action-btn">🗓 Schedule Review</div>
+                </div>
+              </div>
+              <div class="msg-meta">SQL Genie AI · 13:55 UTC · 1.2s response time</div>
+            </div>
+
+            <div id="aiTyping" style="display:none;" class="msg-ai">
+              <div class="ai-thinking">
+                <span>🧞 SQL Genie is thinking</span>
+                <div class="dot-pulse"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <div style="font-size:20px;">🧞</div>
+            <input class="chat-input" id="aiQuery" type="text" placeholder="Ask anything about your SQL environment..." onkeypress="handleChatEnter(event)"/>
+            <button class="send-btn" onclick="sendAIMessage()">➤</button>
+          </div>
+        </div>
+
+        <!-- SIDE PANEL -->
+        <div class="side-panel">
+          <div class="card">
+            <div class="card-header"><div class="card-title">📋 Session Context</div></div>
+            <div style="font-size:13px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Session</span><strong>#1042</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Queries</span><strong>18 today</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Scope</span><strong>All Environments</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">AI Model</span><strong>GPT-4o</strong></div>
+              <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Avg Response</span><strong>0.9s</strong></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">💡 Suggested Actions</div></div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="ai-action-btn" style="cursor:pointer;font-size:12px;padding:8px 12px;" onclick="simulateQuery('Generate daily health report')">📊 Generate Daily Report</div>
+              <div class="ai-action-btn" style="cursor:pointer;font-size:12px;padding:8px 12px;" onclick="simulateQuery('Find unused indexes')">🗂 Find Unused Indexes</div>
+              <div class="ai-action-btn" style="cursor:pointer;font-size:12px;padding:8px 12px;" onclick="simulateQuery('Identify orphaned logins')">👤 Orphaned Logins</div>
+              <div class="ai-action-btn" style="cursor:pointer;font-size:12px;padding:8px 12px;" onclick="simulateQuery('Top 5 databases by growth')">💽 Growth Analysis</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">🕐 Recent Queries</div></div>
+            <div style="font-size:12px;display:flex;flex-direction:column;gap:10px;">
+              <div style="padding:8px;background:#f8fafc;border-radius:8px;border-left:3px solid var(--accent);">Show failed backups in PROD</div>
+              <div style="padding:8px;background:#f8fafc;border-radius:8px;border-left:3px solid var(--success);">Storage forecast Q1 2026</div>
+              <div style="padding:8px;background:#f8fafc;border-radius:8px;border-left:3px solid #7c3aed;">AG sync status all groups</div>
+              <div style="padding:8px;background:#f8fafc;border-radius:8px;border-left:3px solid var(--warning);">Blocking sessions last hour</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 3: HEALTH CENTER
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-health">
+      <div class="page-header">
+        <div>
+          <div class="page-title">❤️ Health Center</div>
+          <div class="page-subtitle">Real-time health scoring across all servers and databases</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">📋 Export</button>
+          <button class="btn btn-primary">🔄 Refresh Scores</button>
+        </div>
+      </div>
+
+      <!-- Health KPIs -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card green"><div class="kpi-label">Healthy Servers</div><div class="kpi-value">541</div><div class="kpi-trend up">86.7% of fleet</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">Warning</div><div class="kpi-value">71</div><div class="kpi-trend down">▼ 8 resolved today</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Critical</div><div class="kpi-value">12</div><div class="kpi-trend down">▼ 4 new today</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Avg Health Score</div><div class="kpi-value">92</div><div class="kpi-trend up">▲ vs 89 last week</div></div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🖥️ Server Health Scorecard</div><span class="card-action">Export CSV</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Server</th><th>Env</th><th>Score</th><th>CPU</th><th>Memory</th><th>Disk</th><th>AG Status</th><th>Last Check</th></tr></thead>
+              <tbody>
+                <tr><td><strong>PROD-SQL-001</strong></td><td><span class="badge badge-red">PROD</span></td><td><span class="score-circle score-high">96</span></td><td>42%</td><td>65%</td><td>52%</td><td><span class="badge badge-green">Synced</span></td><td>1 min ago</td></tr>
+                <tr><td><strong>PROD-SQL-012</strong></td><td><span class="badge badge-red">PROD</span></td><td><span class="score-circle score-low">61</span></td><td>94%</td><td>82%</td><td>74%</td><td><span class="badge badge-green">Synced</span></td><td>1 min ago</td></tr>
+                <tr><td><strong>PROD-SQL-022</strong></td><td><span class="badge badge-red">PROD</span></td><td><span class="score-circle score-high">91</span></td><td>55%</td><td>72%</td><td>61%</td><td><span class="badge badge-green">Synced</span></td><td>2 min ago</td></tr>
+                <tr><td><strong>PROD-SQL-047</strong></td><td><span class="badge badge-red">PROD</span></td><td><span class="score-circle score-mid">72</span></td><td>78%</td><td>91%</td><td>68%</td><td><span class="badge badge-orange">Lag 2.3s</span></td><td>2 min ago</td></tr>
+                <tr><td><strong>PROD-SQL-089</strong></td><td><span class="badge badge-red">PROD</span></td><td><span class="score-circle score-mid">74</span></td><td>61%</td><td>70%</td><td>82%</td><td><span class="badge badge-green">Synced</span></td><td>2 min ago</td></tr>
+                <tr><td><strong>UAT-SQL-001</strong></td><td><span class="badge badge-blue">UAT</span></td><td><span class="score-circle score-high">88</span></td><td>38%</td><td>50%</td><td>42%</td><td><span class="badge badge-gray">N/A</span></td><td>3 min ago</td></tr>
+                <tr><td><strong>UAT-SQL-003</strong></td><td><span class="badge badge-blue">UAT</span></td><td><span class="score-circle score-mid">78</span></td><td>66%</td><td>54%</td><td>44%</td><td><span class="badge badge-orange">Lag 1.1s</span></td><td>3 min ago</td></tr>
+                <tr><td><strong>DEV-SQL-007</strong></td><td><span class="badge badge-gray">DEV</span></td><td><span class="score-circle score-high">95</span></td><td>22%</td><td>40%</td><td>30%</td><td><span class="badge badge-gray">N/A</span></td><td>5 min ago</td></tr>
+                <tr><td><strong>DR-SQL-011</strong></td><td><span class="badge badge-purple">DR</span></td><td><span class="score-circle score-high">94</span></td><td>28%</td><td>41%</td><td>38%</td><td><span class="badge badge-green">Synced</span></td><td>4 min ago</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">📊 Health Distribution</div></div>
+            <div class="donut-wrap">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <!-- Healthy 86.7% -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#10b981" stroke-width="14" stroke-dasharray="261 40" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+                <!-- Warning 11.4% -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#f59e0b" stroke-width="14" stroke-dasharray="34 267" stroke-dashoffset="-261" transform="rotate(-90 60 60)"/>
+                <!-- Critical 1.9% -->
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#ef4444" stroke-width="14" stroke-dasharray="6 295" stroke-dashoffset="-295" transform="rotate(-90 60 60)"/>
+                <text x="60" y="64" text-anchor="middle" font-size="16" font-weight="800" fill="#1e293b">92%</text>
+              </svg>
+              <div class="donut-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div><span>Healthy (541)</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div><span>Warning (71)</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div><span>Critical (12)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔎 Health Check Areas</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="health-item"><span class="health-name">Backup Success</span><div class="progress-wrap" style="width:100px;flex-shrink:0;"><div class="progress-bar progress-green" style="width:98%"></div></div><span class="health-score good">98%</span></div>
+              <div class="health-item"><span class="health-name">AG Synchronization</span><div class="progress-wrap" style="width:100px;flex-shrink:0;"><div class="progress-bar progress-green" style="width:96%"></div></div><span class="health-score good">96%</span></div>
+              <div class="health-item"><span class="health-name">Patch Compliance</span><div class="progress-wrap" style="width:100px;flex-shrink:0;"><div class="progress-bar progress-orange" style="width:87%"></div></div><span class="health-score warn">87%</span></div>
+              <div class="health-item"><span class="health-name">CPU &lt; 80% Threshold</span><div class="progress-wrap" style="width:100px;flex-shrink:0;"><div class="progress-bar progress-orange" style="width:91%"></div></div><span class="health-score warn">91%</span></div>
+              <div class="health-item"><span class="health-name">Disk &lt; 85% Threshold</span><div class="progress-wrap" style="width:100px;flex-shrink:0;"><div class="progress-bar progress-green" style="width:94%"></div></div><span class="health-score good">94%</span></div>
+              <div class="health-item"><span class="health-name">Security Compliance</span><div class="progress-wrap" style="width:100px;flex-shrink:0;"><div class="progress-bar progress-orange" style="width:83%"></div></div><span class="health-score warn">83%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 4: BACKUP COMPLIANCE
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-backup">
+      <div class="page-header">
+        <div>
+          <div class="page-title">💾 Backup Compliance</div>
+          <div class="page-subtitle">Full, Differential and Log backup tracking across all environments</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">⬇ Export Report</button>
+          <button class="btn btn-primary">▶ Run All Failed</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card green"><div class="kpi-label">Successful Backups</div><div class="kpi-value">4,831</div><div class="kpi-trend up">98.4% compliance</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Failed Backups</div><div class="kpi-value">81</div><div class="kpi-trend down">▼ 12 new failures</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">Delayed (>SLA)</div><div class="kpi-value">34</div><div class="kpi-trend down">▼ SLA breach</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Databases Covered</div><div class="kpi-value">4,912</div><div class="kpi-trend up">100% enrolled</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Backup Status Detail</div>
+          <div style="display:flex;gap:8px;">
+            <select style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:12px;outline:none;">
+              <option>All Environments</option><option>Production</option><option>UAT</option><option>DR</option>
+            </select>
+            <select style="border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:12px;outline:none;">
+              <option>All Status</option><option>Failed</option><option>Success</option><option>Delayed</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Server</th><th>Database</th><th>Env</th><th>Type</th><th>Last Full</th><th>Last Diff</th><th>Last Log</th><th>Duration</th><th>Size</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td><strong>PROD-SQL-012</strong></td><td>OrdersDB</td><td><span class="badge badge-red">PROD</span></td><td>Full</td><td>2 days ago</td><td>Failed</td><td>13:00</td><td>—</td><td>—</td><td><span class="badge badge-red">Failed</span></td><td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px;">Retry</button></td></tr>
+              <tr><td><strong>PROD-SQL-012</strong></td><td>FinanceDB</td><td><span class="badge badge-red">PROD</span></td><td>Full</td><td>2 days ago</td><td>Failed</td><td>12:50</td><td>—</td><td>—</td><td><span class="badge badge-red">Failed</span></td><td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px;">Retry</button></td></tr>
+              <tr><td><strong>PROD-SQL-001</strong></td><td>CustomerDB</td><td><span class="badge badge-red">PROD</span></td><td>Full</td><td>Today 02:00</td><td>09:00</td><td>13:30</td><td>42m</td><td>284 GB</td><td><span class="badge badge-green">Success</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">Details</button></td></tr>
+              <tr><td><strong>PROD-SQL-001</strong></td><td>InventoryDB</td><td><span class="badge badge-red">PROD</span></td><td>Full</td><td>Today 02:30</td><td>09:30</td><td>13:30</td><td>28m</td><td>112 GB</td><td><span class="badge badge-green">Success</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">Details</button></td></tr>
+              <tr><td><strong>PROD-SQL-089</strong></td><td>ReportingDB</td><td><span class="badge badge-red">PROD</span></td><td>Diff</td><td>Yesterday</td><td>Failed</td><td>13:15</td><td>—</td><td>—</td><td><span class="badge badge-orange">Delayed</span></td><td><button class="btn btn-danger" style="padding:4px 10px;font-size:11px;">Retry</button></td></tr>
+              <tr><td><strong>UAT-SQL-003</strong></td><td>TestDB_v2</td><td><span class="badge badge-blue">UAT</span></td><td>Full</td><td>Today 01:00</td><td>N/A</td><td>N/A</td><td>8m</td><td>22 GB</td><td><span class="badge badge-green">Success</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">Details</button></td></tr>
+              <tr><td><strong>DR-SQL-011</strong></td><td>OrdersDB_DR</td><td><span class="badge badge-purple">DR</span></td><td>Log</td><td>Yesterday</td><td>N/A</td><td>Every 15min</td><td>2m</td><td>1.2 GB</td><td><span class="badge badge-green">Success</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">Details</button></td></tr>
+              <tr><td><strong>PROD-SQL-022</strong></td><td>HRDB</td><td><span class="badge badge-red">PROD</span></td><td>Full</td><td>Today 03:00</td><td>10:00</td><td>13:45</td><td>19m</td><td>67 GB</td><td><span class="badge badge-green">Success</span></td><td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;">Details</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 5: MIGRATION FACTORY
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-migration">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🚀 Migration Factory</div>
+          <div class="page-subtitle">On-premises to Azure, version upgrades, and platform migrations</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">📋 Schedule Migration</button>
+          <button class="btn btn-primary">+ New Project</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card green"><div class="kpi-label">Completed</div><div class="kpi-value">142</div><div class="kpi-trend up">▲ 18 this quarter</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">In Progress</div><div class="kpi-value">23</div><div class="kpi-trend up">On Schedule</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">Planned</div><div class="kpi-value">87</div><div class="kpi-trend up">Q1 2026 targets</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Blocked</div><div class="kpi-value">4</div><div class="kpi-trend down">▼ Awaiting approval</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">📦 Active Migration Projects</div><span class="card-action">View All →</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Project</th><th>Source</th><th>Target</th><th>Type</th><th>Databases</th><th>Progress</th><th>Owner</th><th>ETA</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>MIG-2025-041</strong></td>
+                <td>PROD-SQL-2008R2</td>
+                <td>Azure SQL MI</td>
+                <td><span class="badge badge-blue">Cloud Lift</span></td>
+                <td>12</td>
+                <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:80px;"><div class="progress-bar progress-green" style="width:78%"></div></div><span style="font-size:12px;">78%</span></div></td>
+                <td>A. Patel</td>
+                <td>Nov 14</td>
+                <td><span class="badge badge-green">On Track</span></td>
+              </tr>
+              <tr>
+                <td><strong>MIG-2025-038</strong></td>
+                <td>PROD-SQL-2016</td>
+                <td>SQL Server 2022</td>
+                <td><span class="badge badge-purple">Upgrade</span></td>
+                <td>28</td>
+                <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:80px;"><div class="progress-bar progress-blue" style="width:55%"></div></div><span style="font-size:12px;">55%</span></div></td>
+                <td>M. Chen</td>
+                <td>Dec 01</td>
+                <td><span class="badge badge-blue">In Progress</span></td>
+              </tr>
+              <tr>
+                <td><strong>MIG-2025-031</strong></td>
+                <td>LEGACY-SQL-2012</td>
+                <td>Azure SQL DB</td>
+                <td><span class="badge badge-blue">Cloud Lift</span></td>
+                <td>6</td>
+                <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:80px;"><div class="progress-bar progress-orange" style="width:32%"></div></div><span style="font-size:12px;">32%</span></div></td>
+                <td>S. Morris</td>
+                <td>Jan 15</td>
+                <td><span class="badge badge-orange">At Risk</span></td>
+              </tr>
+              <tr>
+                <td><strong>MIG-2025-044</strong></td>
+                <td>PROD-SQL-047</td>
+                <td>SQL Server 2022</td>
+                <td><span class="badge badge-purple">Upgrade</span></td>
+                <td>15</td>
+                <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:80px;"><div class="progress-bar progress-blue" style="width:18%"></div></div><span style="font-size:12px;">18%</span></div></td>
+                <td>R. Johnson</td>
+                <td>Feb 01</td>
+                <td><span class="badge badge-blue">In Progress</span></td>
+              </tr>
+              <tr>
+                <td><strong>MIG-2025-027</strong></td>
+                <td>PROD-SQL-2014-LEGACY</td>
+                <td>SQL Server 2022</td>
+                <td><span class="badge badge-gray">Consolidation</span></td>
+                <td>44</td>
+                <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-wrap" style="width:80px;"><div class="progress-bar progress-red" style="width:8%"></div></div><span style="font-size:12px;">8%</span></div></td>
+                <td>T. Wilson</td>
+                <td>Mar 30</td>
+                <td><span class="badge badge-red">Blocked</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🗓 Migration Calendar</div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="alert-item info"><span class="alert-icon">🚀</span><div class="alert-text"><strong>MIG-2025-041 Phase 3 Cutover</strong><span>PROD-SQL-2008R2 → Azure SQL MI · 3 databases</span></div><span class="alert-time">Nov 14, 22:00</span></div>
+            <div class="alert-item info"><span class="alert-icon">🔧</span><div class="alert-text"><strong>MIG-2025-038 Compatibility Testing</strong><span>SQL 2016 → SQL 2022 · UAT validation</span></div><span class="alert-time">Nov 20, 06:00</span></div>
+            <div class="alert-item warn"><span class="alert-icon">⚠️</span><div class="alert-text"><strong>MIG-2025-031 Risk Review</strong><span>Schedule re-assessment required</span></div><span class="alert-time">Nov 18, 10:00</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Migration by Target Platform</div></div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding-top:8px;">
+            <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Azure SQL Managed Instance</span><strong>68</strong></div><div class="progress-wrap"><div class="progress-bar progress-blue" style="width:68%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>SQL Server 2022 Upgrade</span><strong>82</strong></div><div class="progress-wrap"><div class="progress-bar progress-green" style="width:82%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Azure SQL Database</span><strong>38</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:38%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Consolidation / Decommission</span><strong>56</strong></div><div class="progress-wrap"><div class="progress-bar progress-red" style="width:56%"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 6: SECURITY HUB
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-security">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🔐 Security Hub</div>
+          <div class="page-subtitle">CIS Benchmark compliance, vulnerability tracking and access governance</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">📋 Compliance Report</button>
+          <button class="btn btn-primary">🔍 Run Security Scan</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);">
+        <div class="kpi-card green"><div class="kpi-label">CIS Score</div><div class="kpi-value">83%</div><div class="kpi-trend up">▲ +4% this quarter</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Critical Vulns</div><div class="kpi-value">12</div><div class="kpi-trend down">▼ Requires action</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">High Risk</div><div class="kpi-value">31</div><div class="kpi-trend down">▼ 8 new this week</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">SA Accounts Active</div><div class="kpi-value">4</div><div class="kpi-trend down">▼ Should be 0</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Orphaned Logins</div><div class="kpi-value">147</div><div class="kpi-trend down">▼ Action required</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🚨 Security Findings</div><span class="card-action">Remediate All →</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Finding</th><th>Severity</th><th>Servers</th><th>CIS Rule</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>SA account enabled</td><td><span class="badge badge-red">Critical</span></td><td>4</td><td>CIS 2.2</td><td><span class="badge badge-orange">In Remediation</span></td></tr>
+                <tr><td>SQL Auth enabled</td><td><span class="badge badge-red">Critical</span></td><td>18</td><td>CIS 2.1</td><td><span class="badge badge-red">Open</span></td></tr>
+                <tr><td>xp_cmdshell enabled</td><td><span class="badge badge-red">Critical</span></td><td>7</td><td>CIS 2.17</td><td><span class="badge badge-orange">In Remediation</span></td></tr>
+                <tr><td>Orphaned logins</td><td><span class="badge badge-orange">High</span></td><td>42</td><td>CIS 4.3</td><td><span class="badge badge-red">Open</span></td></tr>
+                <tr><td>TDE not enabled</td><td><span class="badge badge-orange">High</span></td><td>23</td><td>CIS 5.1</td><td><span class="badge badge-blue">Planned</span></td></tr>
+                <tr><td>Audit not configured</td><td><span class="badge badge-orange">High</span></td><td>31</td><td>CIS 6.1</td><td><span class="badge badge-red">Open</span></td></tr>
+                <tr><td>Password policy violation</td><td><span class="badge badge-blue">Medium</span></td><td>9</td><td>CIS 3.2</td><td><span class="badge badge-green">Resolved</span></td></tr>
+                <tr><td>Guest user enabled</td><td><span class="badge badge-blue">Medium</span></td><td>66</td><td>CIS 4.2</td><td><span class="badge badge-orange">In Remediation</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">🛡 CIS Compliance by Category</div></div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Authentication</span><strong style="color:#ef4444;">61%</strong></div><div class="progress-wrap"><div class="progress-bar progress-red" style="width:61%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Encryption (TDE/SSL)</span><strong style="color:#f59e0b;">74%</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:74%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Auditing & Logging</span><strong style="color:#f59e0b;">78%</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:78%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Access Controls</span><strong style="color:#10b981;">92%</strong></div><div class="progress-wrap"><div class="progress-bar progress-green" style="width:92%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Patching & Updates</span><strong style="color:#f59e0b;">87%</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:87%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Network Security</span><strong style="color:#10b981;">95%</strong></div><div class="progress-wrap"><div class="progress-bar progress-green" style="width:95%"></div></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🕵️ Privileged Access</div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Login</th><th>Role</th><th>Last Login</th><th>Risk</th></tr></thead>
+                <tbody>
+                  <tr><td>sa</td><td>sysadmin</td><td>Never</td><td><span class="badge badge-red">Critical</span></td></tr>
+                  <tr><td>admin_svc</td><td>sysadmin</td><td>45 days ago</td><td><span class="badge badge-orange">High</span></td></tr>
+                  <tr><td>dba_user01</td><td>sysadmin</td><td>Today</td><td><span class="badge badge-blue">Medium</span></td></tr>
+                  <tr><td>app_prod_svc</td><td>db_owner</td><td>Today</td><td><span class="badge badge-green">Low</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 7: PERFORMANCE INSIGHTS
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-performance">
+      <div class="page-header">
+        <div>
+          <div class="page-title">⚡ Performance Insights</div>
+          <div class="page-subtitle">Query performance, wait statistics, and index health analysis</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">📊 Baseline Report</button>
+          <button class="btn btn-primary">🔍 Analyse Now</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card green"><div class="kpi-label">Avg Execution Time</div><div class="kpi-value">142ms</div><div class="kpi-trend up">▲ Improved 18ms</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Long Queries (>30s)</div><div class="kpi-value">7</div><div class="kpi-trend down">▼ Active now</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">Blocking Sessions</div><div class="kpi-value">3</div><div class="kpi-trend down">▼ Active chains</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Missing Indexes</div><div class="kpi-value">48</div><div class="kpi-trend down">▼ Est. 31% gain</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🐢 Top 10 Slow Queries</div><span class="card-action">Kill Session</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Database</th><th>Query Snippet</th><th>Avg Duration</th><th>Executions</th><th>CPU</th><th>Reads</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td>OrdersDB</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px;">SELECT o.* FROM Orders o JOIN...</td><td><strong style="color:#ef4444;">142s</strong></td><td>28/hr</td><td>87%</td><td>2.1M</td><td><button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;">Tune</button></td></tr>
+                <tr><td>FinanceDB</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px;">UPDATE Transactions SET status...</td><td><strong style="color:#ef4444;">88s</strong></td><td>12/hr</td><td>62%</td><td>890K</td><td><button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;">Tune</button></td></tr>
+                <tr><td>ReportingDB</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px;">SELECT * FROM SalesReport WHERE...</td><td><strong style="color:#f59e0b;">44s</strong></td><td>156/hr</td><td>71%</td><td>4.7M</td><td><button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;">Tune</button></td></tr>
+                <tr><td>CustomerDB</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px;">SELECT c.Name, a.* FROM Customers...</td><td><strong style="color:#f59e0b;">28s</strong></td><td>44/hr</td><td>45%</td><td>1.2M</td><td><button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;">Tune</button></td></tr>
+                <tr><td>HRDB</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px;">EXEC usp_GetPayrollSummary @year...</td><td><strong style="color:#10b981;">12s</strong></td><td>6/hr</td><td>38%</td><td>340K</td><td><button class="btn btn-ghost" style="padding:3px 8px;font-size:11px;">Tune</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">⏱ Top Wait Statistics</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>CXPACKET (Parallelism)</span><strong>38%</strong></div><div class="progress-wrap"><div class="progress-bar progress-red" style="width:38%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>PAGEIOLATCH_SH (Disk I/O)</span><strong>24%</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:24%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>LCK_M_X (Lock Waits)</span><strong>18%</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:18%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>ASYNC_NETWORK_IO</span><strong>11%</strong></div><div class="progress-wrap"><div class="progress-bar progress-blue" style="width:11%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>SOS_SCHEDULER_YIELD</span><strong>6%</strong></div><div class="progress-wrap"><div class="progress-bar progress-green" style="width:6%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Other</span><strong>3%</strong></div><div class="progress-wrap"><div class="progress-bar progress-green" style="width:3%"></div></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">📋 Missing Index Recommendations</div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Database</th><th>Table</th><th>Estimated Gain</th><th>Impact</th></tr></thead>
+                <tbody>
+                  <tr><td>OrdersDB</td><td>dbo.Orders</td><td style="color:#10b981;font-weight:700;">+34%</td><td><span class="badge badge-red">Critical</span></td></tr>
+                  <tr><td>FinanceDB</td><td>dbo.Transactions</td><td style="color:#10b981;font-weight:700;">+28%</td><td><span class="badge badge-red">Critical</span></td></tr>
+                  <tr><td>ReportingDB</td><td>dbo.SalesData</td><td style="color:#10b981;font-weight:700;">+21%</td><td><span class="badge badge-orange">High</span></td></tr>
+                  <tr><td>CustomerDB</td><td>dbo.CustomerAddresses</td><td style="color:#10b981;font-weight:700;">+14%</td><td><span class="badge badge-orange">High</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 8: AUTOMATION HUB
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-automation">
+      <div class="page-header">
+        <div>
+          <div class="page-title">⚙️ Automation Hub</div>
+          <div class="page-subtitle">Runbooks, scheduled jobs, and AI-driven remediation workflows</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">📋 New Runbook</button>
+          <button class="btn btn-primary">▶ Run Workflow</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card green"><div class="kpi-label">Jobs Ran Today</div><div class="kpi-value">1,284</div><div class="kpi-trend up">▲ 99.1% success</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Failed Jobs</div><div class="kpi-value">11</div><div class="kpi-trend down">▼ Needs attention</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Active Runbooks</div><div class="kpi-value">74</div><div class="kpi-trend up">▲ 6 added this week</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Auto-Remediated</div><div class="kpi-value">328</div><div class="kpi-trend up">▲ This month</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Scheduled Jobs</div><span class="card-action">View All 1,284 →</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Job Name</th><th>Server</th><th>Schedule</th><th>Last Run</th><th>Duration</th><th>Status</th><th>Auto-Retry</th></tr></thead>
+              <tbody>
+                <tr><td>FULL_BACKUP_NIGHTLY</td><td>PROD-SQL-001</td><td>Daily 02:00</td><td>Today 02:00</td><td>42m</td><td><span class="badge badge-green">Success</span></td><td><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></td></tr>
+                <tr><td>DIFF_BACKUP_HOURLY</td><td>PROD-SQL-012</td><td>Hourly</td><td>13:00</td><td>—</td><td><span class="badge badge-red">Failed</span></td><td><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></td></tr>
+                <tr><td>INDEX_REORG_WEEKLY</td><td>All PROD</td><td>Sunday 01:00</td><td>Oct 27</td><td>3h 14m</td><td><span class="badge badge-green">Success</span></td><td><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></td></tr>
+                <tr><td>STATS_UPDATE_NIGHTLY</td><td>All PROD</td><td>Daily 03:30</td><td>Today 03:30</td><td>1h 22m</td><td><span class="badge badge-green">Success</span></td><td><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></td></tr>
+                <tr><td>DBCC_CHECKDB_WEEKLY</td><td>PROD-SQL-047</td><td>Sat 22:00</td><td>Oct 26</td><td>2h 08m</td><td><span class="badge badge-orange">Warning</span></td><td><label class="switch"><input type="checkbox"/><span class="slider"></span></label></td></tr>
+                <tr><td>PURGE_OLD_HISTORY</td><td>Central DBA DB</td><td>Daily 04:00</td><td>Today 04:00</td><td>8m</td><td><span class="badge badge-green">Success</span></td><td><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></td></tr>
+                <tr><td>AG_HEALTH_CHECK</td><td>All AG Groups</td><td>Every 5min</td><td>13:55</td><td>12s</td><td><span class="badge badge-green">Success</span></td><td><label class="switch"><input type="checkbox" checked/><span class="slider"></span></label></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">🤖 AI Runbooks</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f0f9ff;border-radius:10px;border-left:3px solid var(--accent);">
+                <div><div style="font-size:13px;font-weight:600;">Auto-Shrink Detector & Disabler</div><div style="font-size:11px;color:var(--text-secondary);">Ran 47 times · Last: Today</div></div>
+                <label class="switch"><input type="checkbox" checked/><span class="slider"></span></label>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f0fdf4;border-radius:10px;border-left:3px solid var(--success);">
+                <div><div style="font-size:13px;font-weight:600;">Blocking Session Auto-Killer</div><div style="font-size:11px;color:var(--text-secondary);">Active · Threshold: 60s block duration</div></div>
+                <label class="switch"><input type="checkbox" checked/><span class="slider"></span></label>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#fefce8;border-radius:10px;border-left:3px solid var(--warning);">
+                <div><div style="font-size:13px;font-weight:600;">Disk Space Auto-Alert</div><div style="font-size:11px;color:var(--text-secondary);">Triggered 3 times today</div></div>
+                <label class="switch"><input type="checkbox" checked/><span class="slider"></span></label>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#fdf2f8;border-radius:10px;border-left:3px solid #7c3aed;">
+                <div><div style="font-size:13px;font-weight:600;">Patch Deployment Scheduler</div><div style="font-size:11px;color:var(--text-secondary);">Inactive · Awaiting maintenance window</div></div>
+                <label class="switch"><input type="checkbox"/><span class="slider"></span></label>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:#f0f9ff;border-radius:10px;border-left:3px solid var(--accent);">
+                <div><div style="font-size:13px;font-weight:600;">Backup Retry on Failure</div><div style="font-size:11px;color:var(--text-secondary);">Active · Max 3 retries · 15min interval</div></div>
+                <label class="switch"><input type="checkbox" checked/><span class="slider"></span></label>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">📈 Automation Savings</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
+              <div style="display:flex;justify-content:space-between;padding:8px;background:#f8fafc;border-radius:8px;"><span>DBA Hours Saved (This Month)</span><strong style="color:var(--success);">342 hrs</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:8px;background:#f8fafc;border-radius:8px;"><span>Incidents Auto-Resolved</span><strong style="color:var(--success);">328</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:8px;background:#f8fafc;border-radius:8px;"><span>MTTR Improvement</span><strong style="color:var(--success);">-64%</strong></div>
+              <div style="display:flex;justify-content:space-between;padding:8px;background:#f8fafc;border-radius:8px;"><span>Estimated Annual Savings</span><strong style="color:var(--success);">$1.24M</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         TAB 9: EXECUTIVE REPORTS
+    ══════════════════════════════════════ -->
+    <div class="tab-page" id="tab-executive">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📈 Executive Reports</div>
+          <div class="page-subtitle">Management summary — October 2025 &nbsp;|&nbsp; Prepared by SQL Genie AI</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost">📧 Email Report</button>
+          <button class="btn btn-primary">⬇ Download PDF</button>
+        </div>
+      </div>
+
+      <!-- Exec KPIs -->
+      <div class="grid-3" style="margin-bottom:20px;">
+        <div class="card" style="text-align:center;padding:30px 20px;">
+          <div style="font-size:48px;font-weight:900;color:var(--success);">92%</div>
+          <div style="font-size:13px;font-weight:700;margin-top:6px;">Overall Platform Health</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">▲ +3.1% vs September</div>
+          <div style="margin-top:12px;" class="progress-wrap"><div class="progress-bar progress-green" style="width:92%"></div></div>
+        </div>
+        <div class="card" style="text-align:center;padding:30px 20px;">
+          <div style="font-size:48px;font-weight:900;color:var(--accent);">98.4%</div>
+          <div style="font-size:13px;font-weight:700;margin-top:6px;">Backup Compliance Rate</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">▼ -0.3% vs September</div>
+          <div style="margin-top:12px;" class="progress-wrap"><div class="progress-bar progress-blue" style="width:98%"></div></div>
+        </div>
+        <div class="card" style="text-align:center;padding:30px 20px;">
+          <div style="font-size:48px;font-weight:900;color:#7c3aed;">99.97%</div>
+          <div style="font-size:13px;font-weight:700;margin-top:6px;">Platform Availability (SLA)</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">▲ Exceeding 99.9% SLA target</div>
+          <div style="margin-top:12px;" class="progress-wrap"><div class="progress-bar" style="background:linear-gradient(90deg,#a78bfa,#7c3aed);width:99%"></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📅 Month-Over-Month Summary</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Metric</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Trend</th></tr></thead>
+              <tbody>
+                <tr><td>Platform Health</td><td>87%</td><td>89%</td><td><strong>92%</strong></td><td style="color:#10b981;font-weight:700;">▲ +3%</td></tr>
+                <tr><td>Backup Compliance</td><td>97.1%</td><td>98.7%</td><td><strong>98.4%</strong></td><td style="color:#f59e0b;font-weight:700;">▼ -0.3%</td></tr>
+                <tr><td>Availability (SLA)</td><td>99.91%</td><td>99.95%</td><td><strong>99.97%</strong></td><td style="color:#10b981;font-weight:700;">▲ +0.02%</td></tr>
+                <tr><td>Security Score</td><td>76%</td><td>80%</td><td><strong>83%</strong></td><td style="color:#10b981;font-weight:700;">▲ +3%</td></tr>
+                <tr><td>Patch Compliance</td><td>81%</td><td>84%</td><td><strong>87%</strong></td><td style="color:#10b981;font-weight:700;">▲ +3%</td></tr>
+                <tr><td>Avg Query Time</td><td>198ms</td><td>160ms</td><td><strong>142ms</strong></td><td style="color:#10b981;font-weight:700;">▲ Faster</td></tr>
+                <tr><td>Critical Incidents</td><td>31</td><td>22</td><td><strong>18</strong></td><td style="color:#10b981;font-weight:700;">▼ -4</td></tr>
+                <tr><td>Auto-Remediated</td><td>198</td><td>271</td><td><strong>328</strong></td><td style="color:#10b981;font-weight:700;">▲ +57</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <div class="card-header"><div class="card-title">💰 Business Value Delivered</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;padding:12px;background:linear-gradient(135deg,#d1fae5,#f0fdf4);border-radius:10px;">
+                <div><div style="font-size:13px;font-weight:700;">DBA Automation Savings</div><div style="font-size:12px;color:var(--text-secondary);">342 engineer hours saved this month</div></div>
+                <div style="font-size:20px;font-weight:900;color:var(--success);">$124K</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:12px;background:linear-gradient(135deg,#dbeafe,#eff6ff);border-radius:10px;">
+                <div><div style="font-size:13px;font-weight:700;">Incident Prevention</div><div style="font-size:12px;color:var(--text-secondary);">13 P1 incidents auto-resolved</div></div>
+                <div style="font-size:20px;font-weight:900;color:var(--accent);">$87K</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:12px;background:linear-gradient(135deg,#ede9fe,#fdf4ff);border-radius:10px;">
+                <div><div style="font-size:13px;font-weight:700;">Performance Optimization</div><div style="font-size:12px;color:var(--text-secondary);">28% query improvement, 3 migrations</div></div>
+                <div style="font-size:20px;font-weight:900;color:#7c3aed;">$56K</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:12px;background:linear-gradient(135deg,#fef3c7,#fffbeb);border-radius:10px;">
+                <div><div style="font-size:13px;font-weight:700;">Cloud Migration Progress</div><div style="font-size:12px;color:var(--text-secondary);">23 databases migrated to Azure</div></div>
+                <div style="font-size:20px;font-weight:900;color:var(--warning);">$43K</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🎯 Q4 2025 Targets</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Platform Health → 95%</span><strong>92% / 95%</strong></div><div class="progress-wrap"><div class="progress-bar progress-green" style="width:92%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Security Score → 90%</span><strong>83% / 90%</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:83%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Patch Compliance → 95%</span><strong>87% / 95%</strong></div><div class="progress-wrap"><div class="progress-bar progress-orange" style="width:87%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Azure Migrations → 100 DBs</span><strong>68 / 100</strong></div><div class="progress-wrap"><div class="progress-bar progress-blue" style="width:68%"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ════════════════════════════════ JAVASCRIPT ════════════════════════════════ -->
+<script>
+  // ── TAB SWITCHING ──
+  function showTab(tabName, navEl) {
+    document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('tab-' + tabName).classList.add('active');
+    if (navEl) navEl.classList.add('active');
+  }
+
+  // ── AI CHAT ──
+  const aiResponses = {
+    'Show top 10 long-running queries': `🔍 Querying DMVs across all PROD servers...<br><br>Found <strong>7 queries running >30 seconds</strong> right now:<br><br>🔴 PROD-SQL-012 — OrdersDB — 142s (SELECT with missing index)<br>🔴 PROD-SQL-047 — FinanceDB — 88s (UPDATE blocking chain)<br>🟡 PROD-SQL-001 — ReportingDB — 44s (Full table scan detected)<br>🟡 UAT-SQL-003 — TestDB — 28s (Missing statistics)<br><br><strong>AI Recommendation:</strong> Add 3 indexes on OrdersDB.Orders table for immediate 34% improvement.`,
+    'List failed backups today': `💾 Scanning backup history on all 624 servers...<br><br>Found <strong>3 backup failures</strong> in last 24 hours:<br><br>🔴 PROD-SQL-012 → OrdersDB — Storage target unreachable<br>🔴 PROD-SQL-012 → FinanceDB — Storage target unreachable<br>🟡 PROD-SQL-089 → ReportingDB — SQL Agent job step failed<br><br>Root cause: \\\\BKPNAS01 network path unavailable since 11:42 UTC.<br><strong>Action:</strong> Network ticket raised automatically. Retry scheduled at 14:30 UTC.`,
+    'Show blocking sessions': `🚫 Detected <strong>3 active blocking chains</strong>:<br><br>🔴 SPID 82 blocking 6 sessions on PROD-SQL-047 — FinanceDB<br>&nbsp;&nbsp;&nbsp;Blocked since: 18 minutes | Wait type: LCK_M_X<br>🟡 SPID 144 blocking 2 sessions on PROD-SQL-001 — OrdersDB<br>&nbsp;&nbsp;&nbsp;Blocked since: 4 minutes | Wait type: LCK_M_U<br><br><strong>Recommendation:</strong> Kill SPID 82 to release chain. This is a runaway UPDATE transaction.`,
+    'Index recommendations': `📋 Analysing missing index DMVs across all production databases...<br><br>Top 4 recommendations:<br><br>✅ OrdersDB.dbo.Orders — <strong>+34% estimated gain</strong><br>&nbsp;&nbsp;ADD INDEX IX_Orders_CustomerDate ON (CustomerID, OrderDate)<br>✅ FinanceDB.dbo.Transactions — <strong>+28% estimated gain</strong><br>&nbsp;&nbsp;ADD INDEX IX_Trans_StatusDate ON (Status, TransDate)<br>✅ ReportingDB.dbo.SalesData — <strong>+21% estimated gain</strong><br><br>Implement all 3? I can generate the full DDL scripts.`,
+    'Storage forecast': `💽 Analysing 90-day storage growth trend...<br><br>Current: <strong>187.4 TB</strong> across all environments<br>Monthly growth rate: <strong>+4.2 TB/month</strong><br>Q1 2026 projection: <strong>~200.1 TB</strong><br><br>⚠️ At-risk servers (hitting 90% within 90 days):<br>🔴 PROD-SQL-089 — hits 90% in ~18 days<br>🟡 PROD-SQL-047 — hits 85% in ~41 days<br>🟡 PROD-SQL-022 — hits 85% in ~67 days`,
+    'Patch compliance report': `🔧 Checking patch levels across all 624 servers...<br><br>Compliant (CU16+): <strong>541 servers (87.3%)</strong><br>Pending patch: <strong>43 servers</strong><br>Critical: <strong>11 servers on EOL builds</strong><br><br>Oldest build: SQL 2019 RTM on LEGACY-SQL-2012 — <strong>immediate action required</strong><br><br>I can generate a full patch deployment plan with recommended maintenance windows.`,
+    'Generate daily health report': `📊 Generating comprehensive daily health report...<br><br>✅ 541 servers healthy (86.7%)<br>⚠️ 71 servers in warning state<br>🔴 12 servers critical<br><br>Key actions for today:<br>1. Resolve PROD-SQL-012 backup failure<br>2. Investigate PROD-SQL-047 CPU spike<br>3. Review UAT-SQL-003 AG lag<br><br>Report exported to SharePoint and emailed to DBA distribution list.`,
+    'Find unused indexes': `🗂 Scanning index usage stats (last 30 days)...<br><br>Found <strong>127 unused indexes</strong> across production databases:<br><br>Top candidates for removal:<br>🔴 OrdersDB — 14 unused indexes consuming 28 GB<br>🔴 CustomerDB — 11 unused indexes consuming 17 GB<br>🟡 HRDB — 8 unused indexes consuming 9 GB<br><br>Removing these would free <strong>~74 GB</strong> of storage and improve write performance.`,
+    'Identify orphaned logins': `👤 Scanning all databases for orphaned logins...<br><br>Found <strong>147 orphaned logins</strong> across 62 servers.<br><br>Top priority:<br>🔴 34 logins — sysadmin role, no matching Windows account<br>🟡 61 logins — db_owner role, inactive >90 days<br>🟡 52 logins — standard users, Windows accounts deleted<br><br>I can generate remediation scripts. Recommend removing or disabling all immediately.`,
+    'Top 5 databases by growth': `💽 Analysing database growth trends (last 90 days)...<br><br>Fastest growing databases:<br><br>1. OrdersDB — <strong>+18.4 GB/month</strong> (PROD-SQL-001)<br>2. FinanceDB — <strong>+12.1 GB/month</strong> (PROD-SQL-012)<br>3. ReportingDB — <strong>+9.8 GB/month</strong> (PROD-SQL-089)<br>4. CustomerDB — <strong>+7.2 GB/month</strong> (PROD-SQL-001)<br>5. AuditLogDB — <strong>+6.4 GB/month</strong> (PROD-SQL-022)<br><br>Recommend archiving AuditLogDB data older than 2 years.`
+  };
+
+  function simulateQuery(query) {
+    document.getElementById('aiQuery').value = query;
+    sendAIMessage();
+  }
+
+  function handleChatEnter(e) {
+    if (e.key === 'Enter') sendAIMessage();
+  }
+
+  function sendAIMessage() {
+    const input = document.getElementById('aiQuery');
+    const query = input.value.trim();
+    if (!query) return;
+    const messages = document.getElementById('chatMessages');
+    const typing = document.getElementById('aiTyping');
+
+    // Add user message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'msg-user';
+    const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) + ' UTC';
+    userMsg.innerHTML = `<div class="msg-bubble">${query}</div><div class="msg-meta">You · ${now}</div>`;
+    messages.insertBefore(userMsg, typing);
+
+    // Show typing
+    typing.style.display = 'flex';
+    messages.scrollTop = messages.scrollHeight;
+    input.value = '';
+
+    // Find matching response
+    let responseText = null;
+    for (const key in aiResponses) {
+      if (query.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(query.toLowerCase().split(' ').slice(0,3).join(' '))) {
+        responseText = aiResponses[key];
+        break;
+      }
+    }
+    if (!responseText) {
+      responseText = `🔍 Analysing your request: "<strong>${query}</strong>"<br><br>I've queried the inventory database and found relevant data. Here's my analysis:<br><br>✅ Query executed successfully across 624 servers<br>⚡ Response generated in 0.7s<br>📋 Results are available below.<br><br>Would you like me to generate a detailed report, create a JIRA ticket, or schedule a remediation runbook?`;
+    }
+
+    setTimeout(() => {
+      typing.style.display = 'none';
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'msg-ai';
+      const aiTime = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) + ' UTC';
+      aiMsg.innerHTML = `<div class="msg-bubble">${responseText}<div class="ai-actions"><div class="ai-action-btn">📋 Create Ticket</div><div class="ai-action-btn">📄 Generate Report</div><div class="ai-action-btn">📧 Notify Team</div></div></div><div class="msg-meta">SQL Genie AI · ${aiTime} · 0.8s response time</div>`;
+      messages.insertBefore(aiMsg, typing);
+      messages.scrollTop = messages.scrollHeight;
+    }, 1800);
+  }
+</script>
+
+</body>
+</html>
